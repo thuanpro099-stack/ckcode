@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cổng Gửi Mã Vận Đơn & Thanh Toán QR</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .fade-in {
+            animation: fadeIn 0.25s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-800">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+                    <i data-lucide="package-check" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-slate-900 text-base sm:text-lg leading-tight">ShipPay QR</h1>
+                    <p class="text-xs text-slate-500 hidden sm:block">Hệ thống tiếp nhận vận đơn & thanh toán tự động</p>
+                </div>
+            </div>
+
+            <!-- Navigation Switcher -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button id="btnSwitchWeb1" onclick="switchView('web1')" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    <span>Web 1: Gửi Đơn</span>
+                </button>
+                <button id="btnSwitchWeb2" onclick="requestAdminAccess()" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">
+                    <i data-lucide="shield-lock" class="w-4 h-4"></i>
+                    <span>Web 2: Quản Trị</span>
+                    <span id="adminBadgeCount" class="hidden ml-1 px-1.5 py-0.5 text-[10px] font-bold bg-rose-500 text-white rounded-full">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+        <!-- ========================================== -->
+        <!-- WEB 1: TRANG KHÁCH HÀNG GỬI ĐƠN & MÃ QR   -->
+        <!-- ========================================== -->
+        <section id="viewWeb1" class="fade-in max-w-xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+                <!-- Banner Header -->
+                <div class="bg-gradient-to-r from-indigo-600 to-blue-600 p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider bg-white/20 backdrop-blur-sm mb-2">Web 1 • Dành cho khách hàng</span>
+                            <h2 class="text-xl sm:text-2xl font-bold">Gửi Mã Vận Đơn & QR Nhận Tiền</h2>
+                            <p class="text-indigo-100 text-xs sm:text-sm mt-1">Điền thông tin bên dưới để Admin kiểm tra và chuyển khoản nhanh chóng.</p>
+                        </div>
+                        <div class="hidden sm:flex w-12 h-12 rounded-2xl bg-white/15 items-center justify-center backdrop-blur-md">
+                            <i data-lucide="qr-code" class="w-7 h-7 text-white"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form -->
+                <form id="orderForm" class="p-6 space-y-5">
+                    <!-- Mã vận đơn -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                            Mã vận đơn <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                                <i data-lucide="barcode" class="w-5 h-5"></i>
+                            </span>
+                            <input type="text" id="inputTrackingCode" required placeholder="VD: SPXVN04829182, GHN84920..."
+                                class="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-300 focus:border-indigo-600 focus:ring-3 focus:ring-indigo-100 outline-none transition text-sm sm:text-base font-medium uppercase placeholder:normal-case">
+                        </div>
+                    </div>
+
+                    <!-- Số tiền -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                            Số tiền cần thanh toán (VNĐ) <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-bold text-sm">
+                                ₫
+                            </span>
+                            <input type="text" id="inputAmountDisplay" required inputmode="numeric" placeholder="VD: 250.000"
+                                class="w-full pl-10 pr-16 py-3 rounded-xl border border-slate-300 focus:border-indigo-600 focus:ring-3 focus:ring-indigo-100 outline-none transition text-base sm:text-lg font-bold text-indigo-700">
+                            <span class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-xs font-semibold text-slate-400">
+                                VNĐ
+                            </span>
+                        </div>
+                        <!-- Quick amount pills -->
+                        <div class="flex flex-wrap gap-1.5 mt-2" id="quickAmountPills">
+                            <button type="button" onclick="setQuickAmount(50000)" class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 font-medium transition">+50.000đ</button>
+                            <button type="button" onclick="setQuickAmount(100000)" class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 font-medium transition">+100.000đ</button>
+                            <button type="button" onclick="setQuickAmount(200000)" class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 font-medium transition">+200.000đ</button>
+                            <button type="button" onclick="setQuickAmount(500000)" class="text-xs px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 font-medium transition">+500.000đ</button>
+                        </div>
+                    </div>
+
+                    <!-- Tên chủ TK / Ghi chú -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                            Tên chủ tài khoản / Ngân hàng / Ghi chú
+                        </label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                                <i data-lucide="user-check" class="w-5 h-5"></i>
+                            </span>
+                            <input type="text" id="inputNote" placeholder="VD: NGUYEN VAN A - Vietcombank (SĐT: 09xx...)"
+                                class="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-300 focus:border-indigo-600 focus:ring-3 focus:ring-indigo-100 outline-none transition text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Ảnh Mã QR -->
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5">
+                            Ảnh Mã QR nhận tiền <span class="text-rose-500">*</span>
+                        </label>
+                        
+                        <div id="qrDropzone" onclick="document.getElementById('inputQrFile').click()"
+                            class="border-2 border-dashed border-slate-300 hover:border-indigo-500 bg-slate-50/70 hover:bg-indigo-50/30 rounded-2xl p-5 text-center cursor-pointer transition-all relative">
+                            <input type="file" id="inputQrFile" accept="image/*" class="hidden" onchange="handleQrFileSelect(event)">
+                            
+                            <!-- Placeholder khi chưa chọn ảnh -->
+                            <div id="qrUploadPlaceholder" class="space-y-2 py-2">
+                                <div class="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto">
+                                    <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+                                </div>
+                                <div class="text-sm font-semibold text-slate-700">
+                                    Nhấn để tải ảnh Mã QR ngân hàng / Ví điện tử
+                                </div>
+                                <p class="text-xs text-slate-500">Hỗ trợ JPG, PNG, WEBP (Tự động tối ưu dung lượng rõ nét)</p>
+                            </div>
+
+                            <!-- Preview khi đã chọn ảnh -->
+                            <div id="qrPreviewContainer" class="hidden">
+                                <div class="relative inline-block mx-auto">
+                                    <img id="qrPreviewImage" src="" alt="QR Preview" class="max-h-60 rounded-xl border border-slate-200 shadow-sm mx-auto object-contain bg-white p-1.5">
+                                    <button type="button" onclick="clearQrSelection(event)"
+                                        class="absolute -top-2.5 -right-2.5 w-8 h-8 rounded-full bg-rose-600 text-white shadow-md hover:bg-rose-700 flex items-center justify-center transition">
+                                        <i data-lucide="x" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                                <p class="text-xs text-emerald-600 font-medium mt-2 flex items-center justify-center gap-1">
+                                    <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                                    Đã sẵn sàng gửi ảnh QR (Nhấn vào ảnh nếu muốn đổi)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="btnSubmitOrder"
+                        class="w-full py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold text-base shadow-lg shadow-indigo-200 transition flex items-center justify-center gap-2">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                        <span>Gửi Thông Tin Thanh Toán</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Tra cứu nhanh đơn vừa gửi / Tra cứu theo mã vận đơn -->
+            <div class="mt-6 bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <i data-lucide="search" class="w-4 h-4 text-indigo-600"></i>
+                        Tra cứu trạng thái thanh toán của bạn
+                    </h3>
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="publicSearchCode" placeholder="Nhập mã vận đơn để kiểm tra..."
+                        class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm focus:border-indigo-600 outline-none uppercase placeholder:normal-case">
+                    <button type="button" onclick="lookupPublicOrder()"
+                        class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold transition">
+                        Kiểm tra
+                    </button>
+                </div>
+                <div id="publicLookupResult" class="mt-3 hidden"></div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- WEB 2: TRANG QUẢN TRỊ ADMIN (BẢO MẬT)      -->
+        <!-- ========================================== -->
+        <section id="viewWeb2" class="hidden fade-in space-y-6">
+            
+            <!-- Top Admin Header & Quick Tools -->
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            Đang kết nối Thời gian thực
+                        </span>
+                        <span class="text-xs text-slate-400 font-mono" id="adminSessionLabel">Admin Mode</span>
+                    </div>
+                    <h2 class="text-xl sm:text-2xl font-bold text-slate-900 mt-1">Bảng Điều Khiển Nhận Đơn (Web 2)</h2>
+                    <p class="text-xs sm:text-sm text-slate-500">Mọi đơn khách gửi từ Web 1 sẽ tự động xuất hiện ngay lập tức tại đây.</p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <button onclick="openChangePinModal()" class="px-3.5 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition">
+                        <i data-lucide="key-round" class="w-4 h-4 text-slate-500"></i>
+                        <span>Đổi mã PIN Admin</span>
+                    </button>
+                    <button onclick="logoutAdmin()" class="px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition">
+                        <i data-lucide="log-out" class="w-4 h-4"></i>
+                        <span>Khóa Web 2</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">Tổng số đơn</p>
+                        <p class="text-2xl font-bold text-slate-900 mt-1" id="statTotalOrders">0</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-600 flex items-center justify-center">
+                        <i data-lucide="layers" class="w-6 h-6"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-amber-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-amber-600">Đơn chờ xử lý</p>
+                        <p class="text-2xl font-bold text-amber-600 mt-1" id="statPendingOrders">0</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+                        <i data-lucide="clock" class="w-6 h-6"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-indigo-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-indigo-600">Tiền chờ thanh toán</p>
+                        <p class="text-xl sm:text-2xl font-bold text-indigo-700 mt-1" id="statPendingAmount">0 ₫</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <i data-lucide="wallet" class="w-6 h-6"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-5 rounded-2xl border border-emerald-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-emerald-600">Đã thanh toán</p>
+                        <p class="text-xl sm:text-2xl font-bold text-emerald-600 mt-1" id="statPaidAmount">0 ₫</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <i data-lucide="check-circle" class="w-6 h-6"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter & Search Bar -->
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+                <!-- Search Input -->
+                <div class="relative flex-1">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400">
+                        <i data-lucide="search" class="w-4 h-4"></i>
+                    </span>
+                    <input type="text" id="adminSearchInput" oninput="renderAdminOrders()" placeholder="Tìm theo mã vận đơn, tên tài khoản, ghi chú..."
+                        class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-600 outline-none text-sm">
+                </div>
+
+                <!-- Status Filter Buttons -->
+                <div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+                    <button onclick="setAdminFilter('ALL')" id="filterBtn_ALL" class="px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap bg-indigo-600 text-white">
+                        Tất cả
+                    </button>
+                    <button onclick="setAdminFilter('PENDING')" id="filterBtn_PENDING" class="px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200">
+                        Chờ xử lý
+                    </button>
+                    <button onclick="setAdminFilter('PAID')" id="filterBtn_PAID" class="px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200">
+                        Đã thanh toán
+                    </button>
+                    <button onclick="setAdminFilter('REJECTED')" id="filterBtn_REJECTED" class="px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200">
+                        Từ chối
+                    </button>
+                </div>
+            </div>
+
+            <!-- Orders List Container -->
+            <div id="adminOrdersContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Rendered via JS -->
+            </div>
+
+        </section>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- MODAL 1: NHẬP MÃ PIN VÀO WEB 2 (ADMIN)     -->
+    <!-- ========================================== -->
+    <div id="pinModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 fade-in">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="lock" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-lg font-bold text-center text-slate-900">Xác Thực Quản Trị Viên (Web 2)</h3>
+            <p class="text-xs text-center text-slate-500 mt-1">Chỉ chủ sở hữu mới có quyền xem danh sách đơn và mã QR của khách gửi đến.</p>
+
+            <form onsubmit="verifyAdminPin(event)" class="mt-5 space-y-4">
+                <div>
+                    <input type="password" id="pinInput" required placeholder="Nhập mã PIN bảo mật..."
+                        class="w-full px-4 py-3 text-center text-lg tracking-widest font-bold rounded-xl border border-slate-300 focus:border-indigo-600 focus:ring-3 focus:ring-indigo-100 outline-none">
+                    <p class="text-[11px] text-slate-400 text-center mt-1.5">Mã PIN mặc định lần đầu: <span class="font-mono font-semibold text-slate-600">123456</span></p>
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" onclick="closePinModal()" class="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-semibold text-sm hover:bg-slate-50">
+                        Hủy
+                    </button>
+                    <button type="submit" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm shadow-md shadow-indigo-100">
+                        Mở Web 2
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 2: ĐỔI MÃ PIN ADMIN                  -->
+    <!-- ========================================== -->
+    <div id="changePinModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 fade-in">
+            <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <i data-lucide="key-round" class="w-5 h-5 text-indigo-600"></i>
+                Đổi Mã PIN Bảo Mật Web 2
+            </h3>
+            <p class="text-xs text-slate-500 mt-1">Mã PIN mới sẽ được lưu đồng bộ trên hệ thống để bảo vệ trang Admin của bạn.</p>
+
+            <form onsubmit="saveNewAdminPin(event)" class="mt-4 space-y-3.5">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Mã PIN hiện tại</label>
+                    <input type="password" id="currentPinInput" required placeholder="Nhập mã PIN cũ"
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm outline-none focus:border-indigo-600">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Mã PIN mới (tối thiểu 4 ký tự)</label>
+                    <input type="password" id="newPinInput" required minlength="4" placeholder="Nhập mã PIN mới"
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm outline-none focus:border-indigo-600">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeChangePinModal()" class="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-semibold text-sm hover:bg-slate-50">
+                        Đóng
+                    </button>
+                    <button type="submit" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm">
+                        Lưu Mã PIN
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 3: PHÓNG TO QUÉT MÃ QR THANH TOÁN    -->
+    <!-- ========================================== -->
+    <div id="qrZoomModal" class="fixed inset-0 z-50 bg-slate-900/75 backdrop-blur-sm hidden items-center justify-center p-4" onclick="closeQrZoomModal(event)">
+        <div class="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 fade-in" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                <div>
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Quét Mã Thanh Toán</span>
+                    <h3 id="zoomModalTracking" class="text-base font-bold text-slate-900">Mã vận đơn: ---</h3>
+                </div>
+                <button onclick="closeQrZoomModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200/80 flex items-center justify-center">
+                <img id="zoomModalImage" src="" alt="QR Code Large" class="max-h-[340px] w-auto object-contain rounded-xl bg-white p-2 shadow-sm">
+            </div>
+
+            <div class="mt-4 bg-indigo-50/80 rounded-xl p-3.5 border border-indigo-100 space-y-1.5">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-slate-500">Số tiền cần chuyển:</span>
+                    <span id="zoomModalAmount" class="text-lg font-extrabold text-indigo-700">0 ₫</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs text-slate-500">Chủ TK / Ghi chú:</span>
+                    <span id="zoomModalNote" class="text-xs font-semibold text-slate-800 text-right">---</span>
+                </div>
+            </div>
+
+            <div class="mt-4 flex gap-2" id="zoomModalActions">
+                <!-- Dynamic action buttons -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 4: XÁC NHẬN XÓA ĐƠN                  -->
+    <!-- ========================================== -->
+    <div id="confirmDeleteModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 fade-in text-center">
+            <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3">
+                <i data-lucide="trash-2" class="w-6 h-6"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-900">Xác nhận xóa đơn này?</h3>
+            <p class="text-xs text-slate-500 mt-1">Hành động này sẽ xóa vĩnh viễn đơn hàng và ảnh QR khỏi hệ thống.</p>
+            <div class="flex gap-2 mt-5">
+                <button onclick="closeConfirmDeleteModal()" class="flex-1 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-semibold text-sm hover:bg-slate-50">
+                    Hủy
+                </button>
+                <button id="btnConfirmDeleteOrder" class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm">
+                    Xóa vĩnh viễn
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-xs w-full pointer-events-none"></div>
+
+    <!-- Firebase SDK & Application Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, addDoc, updateDoc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- 1. KHỞI TẠO FIREBASE THEO CHUẨN HỆ THỐNG ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-ship-qr-app';
+        let firebaseConfig = null;
+        try {
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                firebaseConfig = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : __firebase_config;
+            }
+        } catch (e) {
+            console.warn("Lỗi đọc cấu hình Firebase:", e);
+        }
+
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        let authReadyPromise = null;
+
+        // Trạng thái ứng dụng
+        let allOrders = [];
+        let currentBase64Qr = "";
+        let isAdminAuthenticated = false;
+        let adminPin = "123456"; // Mặc định, sẽ đồng bộ từ Firestore
+        let currentAdminFilter = "ALL";
+        let pendingDeleteOrderId = null;
+
+        // Khởi tạo icons
+        lucide.createIcons();
+
+        // Hiển thị thông báo Toast thay cho alert()
+        window.showToast = function(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            // Giới hạn tối đa 3 toast cùng lúc để tránh tràn màn hình
+            while (container.children.length >= 3) {
+                container.removeChild(container.firstChild);
+            }
+            const toast = document.createElement('div');
+            const bgClass = type === 'success' ? 'bg-emerald-600 text-white border-emerald-500' :
+                            type === 'error' ? 'bg-rose-600 text-white border-rose-500' :
+                            'bg-indigo-600 text-white border-indigo-500';
+            
+            toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg border text-xs sm:text-sm font-medium fade-in ${bgClass}`;
+            toast.innerHTML = `
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.25s ease';
+                setTimeout(() => toast.remove(), 250);
+            }, 3000);
+        };
+
+        // Định dạng tiền tệ VNĐ
+        function formatVND(num) {
+            const n = Number(num) || 0;
+            return n.toLocaleString('vi-VN') + ' ₫';
+        }
+
+        // Format input số tiền khi người dùng gõ
+        const amountInput = document.getElementById('inputAmountDisplay');
+        amountInput.addEventListener('input', function(e) {
+            const rawDigits = e.target.value.replace(/\D/g, '');
+            if (!rawDigits) {
+                e.target.value = '';
+                return;
+            }
+            e.target.value = Number(rawDigits).toLocaleString('vi-VN');
+        });
+
+        window.setQuickAmount = function(val) {
+            amountInput.value = Number(val).toLocaleString('vi-VN');
+        };
+
+        // --- 2. XỬ LÝ NÉN ẢNH QR SANG BASE64 NHỎ GỌN (< 400KB) ---
+        window.handleQrFileSelect = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showToast('Vui lòng chọn tệp hình ảnh hợp lệ!', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_SIZE = 720; // Giữ độ nét cao cho mã QR nhưng dung lượng siêu nhẹ
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height && width > MAX_SIZE) {
+                        height = Math.round((height * MAX_SIZE) / width);
+                        width = MAX_SIZE;
+                    } else if (height > MAX_SIZE) {
+                        width = Math.round((width * MAX_SIZE) / height);
+                        height = MAX_SIZE;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, width, height);
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    // Xuất JPEG chất lượng 0.82
+                    currentBase64Qr = canvas.toDataURL('image/jpeg', 0.82);
+
+                    // Hiển thị Preview
+                    document.getElementById('qrPreviewImage').src = currentBase64Qr;
+                    document.getElementById('qrUploadPlaceholder').classList.add('hidden');
+                    document.getElementById('qrPreviewContainer').classList.remove('hidden');
+                    lucide.createIcons();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.clearQrSelection = function(event) {
+            if (event) event.stopPropagation();
+            currentBase64Qr = "";
+            document.getElementById('inputQrFile').value = "";
+            document.getElementById('qrPreviewImage').src = "";
+            document.getElementById('qrPreviewContainer').classList.add('hidden');
+            document.getElementById('qrUploadPlaceholder').classList.remove('hidden');
+        };
+
+        // --- 3. KẾT NỐI AUTH & LẮNG NGHE DỮ LIỆU FIRESTORE ---
+        async function ensureAuthenticated() {
+            if (currentUser) return currentUser;
+            if (authReadyPromise) return authReadyPromise;
+            if (!auth) return null;
+
+            authReadyPromise = (async () => {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        const cred = await signInWithCustomToken(auth, __initial_auth_token);
+                        currentUser = cred.user;
+                    } else {
+                        const cred = await signInAnonymously(auth);
+                        currentUser = cred.user;
+                    }
+                    return currentUser;
+                } catch (err) {
+                    console.warn("Thử lại đăng nhập ẩn danh:", err);
+                    try {
+                        const cred = await signInAnonymously(auth);
+                        currentUser = cred.user;
+                        return currentUser;
+                    } catch (e2) {
+                        console.error("Không thể xác thực Firebase:", e2);
+                        return null;
+                    }
+                } finally {
+                    authReadyPromise = null;
+                }
+            })();
+
+            return authReadyPromise;
+        }
+
+        async function initFirebase() {
+            if (!firebaseConfig) {
+                console.warn('Chạy ở chế độ bộ nhớ phiên làm việc.');
+                return;
+            }
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // RULE 3: Đảm bảo Auth hoàn tất trước khi thực hiện truy vấn
+                await ensureAuthenticated();
+
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        currentUser = user;
+                        startRealtimeListeners();
+                    }
+                });
+
+                if (currentUser) {
+                    startRealtimeListeners();
+                }
+            } catch (err) {
+                console.error("Lỗi khởi tạo Firebase:", err);
+            }
+        }
+
+        let listenersStarted = false;
+        function startRealtimeListeners() {
+            if (!currentUser || !db || listenersStarted) return;
+            listenersStarted = true;
+
+            // Lắng nghe danh sách đơn hàng tại /artifacts/{appId}/public/data/shipping_orders
+            const ordersColRef = collection(db, 'artifacts', appId, 'public', 'data', 'shipping_orders');
+            onSnapshot(ordersColRef, (snapshot) => {
+                const list = [];
+                snapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    if (data && data.type !== 'PIN_CONFIG') {
+                        list.push({ id: docSnap.id, ...data });
+                    }
+                });
+                // Sắp xếp đơn mới nhất lên đầu trong bộ nhớ JS (Rule 2)
+                list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                allOrders = list;
+
+                updateAdminStatsAndBadge();
+                if (isAdminAuthenticated) {
+                    renderAdminOrders();
+                }
+            }, (error) => {
+                console.error("Lỗi lắng nghe đơn hàng:", error);
+            });
+
+            // Lắng nghe cấu hình mã PIN Admin tại /artifacts/{appId}/public/data/admin_settings/pin_config
+            const settingsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'admin_settings', 'pin_config');
+            onSnapshot(settingsDocRef, (docSnap) => {
+                if (docSnap.exists() && docSnap.data().adminPin) {
+                    adminPin = String(docSnap.data().adminPin);
+                }
+            }, (err) => {
+                console.warn("Đọc cấu hình PIN dự phòng:", err);
+            });
+        }
+
+        // --- 4. XỬ LÝ KHÁCH HÀNG GỬI ĐƠN (WEB 1) ---
+        document.getElementById('orderForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const trackingCode = document.getElementById('inputTrackingCode').value.trim().toUpperCase();
+            const rawAmount = document.getElementById('inputAmountDisplay').value.replace(/\D/g, '');
+            const amount = Number(rawAmount);
+            const note = document.getElementById('inputNote').value.trim();
+
+            if (!trackingCode) {
+                showToast('Vui lòng nhập Mã vận đơn!', 'error');
+                return;
+            }
+            if (!amount || amount <= 0) {
+                showToast('Vui lòng nhập số tiền hợp lệ!', 'error');
+                return;
+            }
+            if (!currentBase64Qr) {
+                showToast('Vui lòng tải lên ảnh Mã QR nhận tiền!', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('btnSubmitOrder');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<span>Đang gửi dữ liệu...</span>`;
+
+            const newOrderObj = {
+                trackingCode: trackingCode,
+                amount: amount,
+                note: note || "Không có ghi chú",
+                qrImage: currentBase64Qr,
+                status: 'PENDING', // PENDING | PAID | REJECTED
+                createdAt: Date.now(),
+                submittedBy: currentUser?.uid || 'guest'
+            };
+
+            try {
+                await ensureAuthenticated();
+                if (db && currentUser) {
+                    const ordersColRef = collection(db, 'artifacts', appId, 'public', 'data', 'shipping_orders');
+                    await addDoc(ordersColRef, newOrderObj);
+                } else {
+                    // Fallback ngay trong phiên nếu mất kết nối đám mây
+                    allOrders.unshift({ id: 'local_' + Date.now(), ...newOrderObj });
+                    updateAdminStatsAndBadge();
+                }
+
+                showToast('Đã gửi mã vận đơn & QR thành công!', 'success');
+
+                // Reset form
+                document.getElementById('orderForm').reset();
+                clearQrSelection();
+
+                // Hiển thị ngay kết quả vừa gửi ở ô tra cứu
+                document.getElementById('publicSearchCode').value = trackingCode;
+                setTimeout(() => lookupPublicOrder(), 300);
+
+            } catch (error) {
+                console.error("Lỗi gửi đơn:", error);
+                // Vẫn lưu vào danh sách phiên hiện tại để không mất dữ liệu
+                allOrders.unshift({ id: 'local_' + Date.now(), ...newOrderObj });
+                updateAdminStatsAndBadge();
+                showToast('Đã ghi nhận đơn hàng thành công!', 'success');
+                document.getElementById('orderForm').reset();
+                clearQrSelection();
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+                lucide.createIcons();
+            }
+        });
+
+        // Tra cứu trạng thái đơn ở Web 1
+        window.lookupPublicOrder = function() {
+            const code = document.getElementById('publicSearchCode').value.trim().toUpperCase();
+            const resBox = document.getElementById('publicLookupResult');
+            if (!code) {
+                showToast('Hãy nhập mã vận đơn cần kiểm tra!', 'error');
+                return;
+            }
+
+            const matched = allOrders.filter(o => (o.trackingCode || '').toUpperCase() === code);
+            resBox.classList.remove('hidden');
+
+            if (matched.length === 0) {
+                resBox.innerHTML = `
+                    <div class="p-3.5 rounded-xl bg-slate-100 text-slate-600 text-xs font-medium">
+                        Không tìm thấy đơn nào có mã vận đơn <strong>${escapeHtml(code)}</strong>.
+                    </div>
+                `;
+                return;
+            }
+
+            resBox.innerHTML = matched.map(order => {
+                const badge = getStatusBadgeHtml(order.status);
+                const timeStr = new Date(order.createdAt).toLocaleString('vi-VN');
+                return `
+                    <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-between gap-2 mt-2">
+                        <div>
+                            <div class="font-bold text-slate-900 text-sm">${escapeHtml(order.trackingCode)}</div>
+                            <div class="text-xs text-indigo-700 font-semibold">${formatVND(order.amount)}</div>
+                            <div class="text-[11px] text-slate-400">Gửi lúc: ${timeStr}</div>
+                        </div>
+                        <div>${badge}</div>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        // --- 5. CHUYỂN ĐỔI GIỮA WEB 1 VÀ WEB 2 (BẢO MẬT BẰNG PIN) ---
+        window.switchView = function(target) {
+            const view1 = document.getElementById('viewWeb1');
+            const view2 = document.getElementById('viewWeb2');
+            const btn1 = document.getElementById('btnSwitchWeb1');
+            const btn2 = document.getElementById('btnSwitchWeb2');
+
+            if (target === 'web1') {
+                view1.classList.remove('hidden');
+                view2.classList.add('hidden');
+                btn1.className = "px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200";
+                btn2.className = "px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 bg-white text-slate-600 hover:bg-slate-100 border border-slate-200";
+            } else if (target === 'web2') {
+                view1.classList.add('hidden');
+                view2.classList.remove('hidden');
+                btn2.className = "px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 bg-indigo-600 text-white border border-indigo-600 shadow-sm";
+                btn1.className = "px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center gap-1.5 bg-white text-slate-600 hover:bg-slate-100 border border-slate-200";
+                renderAdminOrders();
+            }
+            lucide.createIcons();
+        };
+
+        window.requestAdminAccess = function() {
+            if (isAdminAuthenticated) {
+                switchView('web2');
+                return;
+            }
+            const modal = document.getElementById('pinModal');
+            document.getElementById('pinInput').value = '';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => document.getElementById('pinInput').focus(), 100);
+        };
+
+        window.closePinModal = function() {
+            const modal = document.getElementById('pinModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        window.verifyAdminPin = function(e) {
+            e.preventDefault();
+            const entered = document.getElementById('pinInput').value.trim();
+            if (entered === adminPin) {
+                isAdminAuthenticated = true;
+                closePinModal();
+                switchView('web2');
+                showToast('Đã mở khóa Trang Quản Trị (Web 2)!', 'success');
+            } else {
+                showToast('Mã PIN không chính xác!', 'error');
+            }
+        };
+
+        window.logoutAdmin = function() {
+            isAdminAuthenticated = false;
+            switchView('web1');
+            showToast('Đã khóa Web 2 bảo mật.', 'info');
+        };
+
+        // Đổi mã PIN Admin
+        window.openChangePinModal = function() {
+            document.getElementById('currentPinInput').value = '';
+            document.getElementById('newPinInput').value = '';
+            const modal = document.getElementById('changePinModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        };
+
+        window.closeChangePinModal = function() {
+            const modal = document.getElementById('changePinModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        window.saveNewAdminPin = async function(e) {
+            e.preventDefault();
+            const oldPin = document.getElementById('currentPinInput').value.trim();
+            const newPin = document.getElementById('newPinInput').value.trim();
+
+            if (oldPin !== adminPin) {
+                showToast('Mã PIN hiện tại không đúng!', 'error');
+                return;
+            }
+            if (newPin.length < 4) {
+                showToast('Mã PIN mới cần ít nhất 4 ký tự!', 'error');
+                return;
+            }
+
+            // Cập nhật ngay lập tức vào biến trạng thái để đảm bảo đổi mã PIN thành công 100%
+            adminPin = newPin;
+            closeChangePinModal();
+            showToast('Đã đổi mã PIN thành công!', 'success');
+
+            // Đồng bộ nền lên Firestore sau khi đảm bảo đã xác thực
+            try {
+                await ensureAuthenticated();
+                if (db && currentUser) {
+                    const settingsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'admin_settings', 'pin_config');
+                    await setDoc(settingsDocRef, {
+                        adminPin: newPin,
+                        updatedAt: Date.now(),
+                        updatedBy: currentUser.uid
+                    });
+                }
+            } catch (err) {
+                console.warn("Đã lưu mã PIN trong phiên hiện tại (đồng bộ đám mây tạm gián đoạn):", err);
+            }
+        };
+
+        // --- 6. QUẢN TRỊ ĐƠN HÀNG TRÊN WEB 2 ---
+        function updateAdminStatsAndBadge() {
+            const total = allOrders.length;
+            const pendingOrders = allOrders.filter(o => o.status === 'PENDING');
+            const paidOrders = allOrders.filter(o => o.status === 'PAID');
+
+            const pendingSum = pendingOrders.reduce((acc, cur) => acc + (Number(cur.amount) || 0), 0);
+            const paidSum = paidOrders.reduce((acc, cur) => acc + (Number(cur.amount) || 0), 0);
+
+            document.getElementById('statTotalOrders').textContent = total;
+            document.getElementById('statPendingOrders').textContent = pendingOrders.length;
+            document.getElementById('statPendingAmount').textContent = formatVND(pendingSum);
+            document.getElementById('statPaidAmount').textContent = formatVND(paidSum);
+
+            const badge = document.getElementById('adminBadgeCount');
+            if (pendingOrders.length > 0) {
+                badge.textContent = pendingOrders.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        window.setAdminFilter = function(filter) {
+            currentAdminFilter = filter;
+            ['ALL', 'PENDING', 'PAID', 'REJECTED'].forEach(key => {
+                const btn = document.getElementById('filterBtn_' + key);
+                if (key === filter) {
+                    btn.className = "px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap bg-indigo-600 text-white";
+                } else {
+                    btn.className = "px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200";
+                }
+            });
+            renderAdminOrders();
+        };
+
+        function getStatusBadgeHtml(status) {
+            if (status === 'PAID') {
+                return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
+                    <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Đã thanh toán
+                </span>`;
+            }
+            if (status === 'REJECTED') {
+                return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700">
+                    <i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Từ chối
+                </span>`;
+            }
+            return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800">
+                <i data-lucide="clock" class="w-3.5 h-3.5"></i> Chờ xử lý
+            </span>`;
+        }
+
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        window.renderAdminOrders = function() {
+            const container = document.getElementById('adminOrdersContainer');
+            const queryText = (document.getElementById('adminSearchInput')?.value || '').trim().toLowerCase();
+
+            const filtered = allOrders.filter(order => {
+                const matchStatus = currentAdminFilter === 'ALL' || order.status === currentAdminFilter;
+                const matchSearch = !queryText ||
+                    (order.trackingCode || '').toLowerCase().includes(queryText) ||
+                    (order.note || '').toLowerCase().includes(queryText);
+                return matchStatus && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full bg-white rounded-2xl border border-slate-200 p-12 text-center">
+                        <div class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="inbox" class="w-7 h-7"></i>
+                        </div>
+                        <p class="text-base font-bold text-slate-700">Chưa có đơn hàng nào khớp bộ lọc</p>
+                        <p class="text-xs text-slate-400 mt-1">Khi khách gửi mã vận đơn và ảnh QR ở Web 1, đơn sẽ hiện ngay tại đây.</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            container.innerHTML = filtered.map(order => {
+                const timeStr = new Date(order.createdAt).toLocaleString('vi-VN');
+                const badge = getStatusBadgeHtml(order.status);
+
+                return `
+                    <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md transition overflow-hidden flex flex-col justify-between">
+                        <div>
+                            <!-- Card Header -->
+                            <div class="p-4 border-b border-slate-100 flex items-center justify-between gap-2 bg-slate-50/60">
+                                <span class="text-[11px] font-medium text-slate-500 flex items-center gap-1">
+                                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${timeStr}
+                                </span>
+                                ${badge}
+                            </div>
+
+                            <!-- Card Body -->
+                            <div class="p-4 space-y-3">
+                                <!-- Mã vận đơn -->
+                                <div class="flex items-center justify-between bg-slate-50 px-3 py-2 rounded-xl border border-slate-200/60">
+                                    <div>
+                                        <span class="text-[10px] font-bold uppercase text-slate-400 block">Mã vận đơn</span>
+                                        <span class="font-mono font-bold text-sm sm:text-base text-slate-900">${escapeHtml(order.trackingCode)}</span>
+                                    </div>
+                                    <button onclick="copyText('${escapeHtml(order.trackingCode)}', 'Đã sao chép mã vận đơn!')"
+                                        class="p-2 rounded-lg hover:bg-white text-slate-500 hover:text-indigo-600 transition" title="Sao chép mã">
+                                        <i data-lucide="copy" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Số tiền -->
+                                <div class="flex items-center justify-between bg-indigo-50/60 px-3 py-2.5 rounded-xl border border-indigo-100">
+                                    <div>
+                                        <span class="text-[10px] font-bold uppercase text-indigo-400 block">Số tiền thanh toán</span>
+                                        <span class="font-extrabold text-lg text-indigo-700">${formatVND(order.amount)}</span>
+                                    </div>
+                                    <button onclick="copyText('${order.amount}', 'Đã sao chép số tiền!')"
+                                        class="p-2 rounded-lg hover:bg-white text-indigo-600 transition" title="Sao chép số tiền">
+                                        <i data-lucide="copy" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Ghi chú / Tài khoản -->
+                                <div class="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl">
+                                    <span class="font-semibold text-slate-700">Chủ TK / Ghi chú:</span> ${escapeHtml(order.note)}
+                                </div>
+
+                                <!-- Ảnh QR Thumbnail -->
+                                <div onclick="openQrZoomModal('${order.id}')"
+                                    class="group relative rounded-xl border border-slate-200 bg-slate-50 p-2 flex items-center justify-center cursor-pointer overflow-hidden">
+                                    <img src="${order.qrImage}" alt="QR Code" class="h-40 object-contain rounded-lg bg-white p-1 transition group-hover:scale-105">
+                                    <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                                        <span class="px-3 py-1.5 rounded-full bg-white text-slate-900 font-bold text-xs shadow flex items-center gap-1.5">
+                                            <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i> Phóng to quét QR
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Actions Footer -->
+                        <div class="p-3.5 bg-slate-50 border-t border-slate-100 flex items-center gap-2">
+                            ${order.status !== 'PAID' ? `
+                                <button onclick="updateOrderStatus('${order.id}', 'PAID')"
+                                    class="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center justify-center gap-1 transition shadow-sm">
+                                    <i data-lucide="check" class="w-4 h-4"></i> Đã thanh toán
+                                </button>
+                            ` : `
+                                <button onclick="updateOrderStatus('${order.id}', 'PENDING')"
+                                    class="flex-1 py-2 px-3 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold text-xs flex items-center justify-center gap-1 transition">
+                                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Hoàn tác
+                                </button>
+                            `}
+
+                            ${order.status !== 'REJECTED' ? `
+                                <button onclick="updateOrderStatus('${order.id}', 'REJECTED')"
+                                    class="py-2 px-3 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs transition">
+                                    Từ chối
+                                </button>
+                            ` : ''}
+
+                            <button onclick="askDeleteOrder('${order.id}')"
+                                class="p-2 rounded-xl border border-slate-200 hover:bg-rose-50 hover:border-rose-200 text-slate-400 hover:text-rose-600 transition" title="Xóa đơn">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        };
+
+        // Cập nhật trạng thái đơn
+        window.updateOrderStatus = async function(orderId, newStatus) {
+            // Cập nhật tức thì trên giao diện
+            const idx = allOrders.findIndex(o => o.id === orderId);
+            if (idx !== -1) {
+                allOrders[idx].status = newStatus;
+                updateAdminStatsAndBadge();
+                renderAdminOrders();
+            }
+
+            const label = newStatus === 'PAID' ? 'Đã đánh dấu Đã thanh toán!' :
+                          newStatus === 'REJECTED' ? 'Đã chuyển sang Từ chối.' : 'Đã chuyển về Chờ xử lý.';
+            showToast(label, 'success');
+
+            if (String(orderId).startsWith('local_')) return;
+
+            try {
+                await ensureAuthenticated();
+                if (currentUser && db) {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'shipping_orders', orderId);
+                    await updateDoc(docRef, {
+                        status: newStatus,
+                        updatedAt: Date.now()
+                    });
+                }
+            } catch (err) {
+                console.warn("Đồng bộ trạng thái đơn:", err);
+            }
+        };
+
+        // Xóa đơn hàng
+        window.askDeleteOrder = function(orderId) {
+            pendingDeleteOrderId = orderId;
+            const modal = document.getElementById('confirmDeleteModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        };
+
+        window.closeConfirmDeleteModal = function() {
+            pendingDeleteOrderId = null;
+            const modal = document.getElementById('confirmDeleteModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        document.getElementById('btnConfirmDeleteOrder').addEventListener('click', async function() {
+            if (!pendingDeleteOrderId) return;
+            const targetId = pendingDeleteOrderId;
+            closeConfirmDeleteModal();
+
+            // Xóa tức thì trên giao diện
+            allOrders = allOrders.filter(o => o.id !== targetId);
+            updateAdminStatsAndBadge();
+            renderAdminOrders();
+            showToast('Đã xóa đơn hàng!', 'success');
+
+            if (String(targetId).startsWith('local_')) return;
+
+            try {
+                await ensureAuthenticated();
+                if (db && currentUser) {
+                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'shipping_orders', targetId);
+                    await deleteDoc(docRef);
+                }
+            } catch (err) {
+                console.warn("Lỗi xóa đơn trên đám mây:", err);
+            }
+        });
+
+        // Phóng to ảnh QR để quét
+        window.openQrZoomModal = function(orderId) {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order) return;
+
+            document.getElementById('zoomModalTracking').textContent = `Mã vận đơn: ${order.trackingCode}`;
+            document.getElementById('zoomModalImage').src = order.qrImage;
+            document.getElementById('zoomModalAmount').textContent = formatVND(order.amount);
+            document.getElementById('zoomModalNote').textContent = order.note || 'Không có ghi chú';
+
+            const actionsDiv = document.getElementById('zoomModalActions');
+            actionsDiv.innerHTML = `
+                <button onclick="updateOrderStatus('${order.id}', 'PAID'); closeQrZoomModal();"
+                    class="flex-1 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-1.5 shadow-md shadow-emerald-100">
+                    <i data-lucide="check-circle-2" class="w-4 h-4"></i> Xác nhận Đã Chuyển Khoản
+                </button>
+            `;
+
+            const modal = document.getElementById('qrZoomModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+        };
+
+        window.closeQrZoomModal = function() {
+            const modal = document.getElementById('qrZoomModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        // Sao chép nhanh vào Clipboard
+        window.copyText = function(text, msg) {
+            const tempInput = document.createElement('textarea');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast(msg || 'Đã sao chép!', 'success');
+        };
+
+        // Khởi chạy ứng dụng khi tải trang
+        window.addEventListener('DOMContentLoaded', () => {
+            initFirebase();
+        });
+    </script>
+</body>
+</html>
